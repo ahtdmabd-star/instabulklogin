@@ -1,6 +1,7 @@
 import os
+import requests
+import pyotp
 from flask import Flask, render_template, request, jsonify
-from instagrapi import Client
 
 app = Flask(__name__)
 
@@ -25,22 +26,43 @@ def extract():
         password = parts[1]
         totp_key = parts[2] if len(parts) > 2 and parts[2] else None
         
-        cl = Client()
-        if totp_key:
-            cl.verification_code = totp_key.replace(" ", "")
-            
+        session = requests.Session()
+        session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'X-IG-App-ID': '936619743392459',
+            'Referer': 'https://www.instagram.com/accounts/login/'
+        })
+        
         try:
-            # ইনস্টাগ্রামে লগইন করার চেষ্টা
-            cl.login(username, password)
+            # প্রথমত ক্রাফট টোকেন পাওয়ার জন্য ইনস্টাগ্রাম হোম পেজে রিকোয়েস্ট পাঠানো
+            resp = session.get('https://www.instagram.com/accounts/login/')
+            csrftoken = session.cookies.get('csrftoken', '')
             
-            # কুকিজ বা সেশন ডেটা সংগ্রহ করা
-            settings = cl.get_settings()
-            session_id = settings.get("authorization_data", {}).get("sessionid", "")
+            session.headers.update({
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            })
+            
+            # লগইন রিকোয়েস্ট পেোড
+            login_data = {
+                'username': username,
+                'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{int(os.time?.now() if hasattr(os, "time") else 0)}:{password}',
+                'queryParams': '{}',
+                'optIntoOneTap': 'false'
+            }
+            
+            # যদি 2FA বা সিকিউরিটি চেক থাকে
+            if totp_key:
+                totp = pyotp.TOTP(totp_key.replace(" ", ""))
+                # ওটিপি জেনারেট করে হ্যান্ডেল করা যেতে পারে
+            
+            # সরাসরি সেশন কুকি চেক করা
+            session_id = session.cookies.get('sessionid', '')
             
             if session_id:
                 results.append(f"{username}|{password}|sessionid={session_id}")
             else:
-                results.append(f"{username}|{password}|Login Successful but Session ID not found")
+                results.append(f"{username}|{password}|Login Failed / Checkpoint Required")
                 
         except Exception as e:
             results.append(f"{username}|{password}|Error: {str(e)}")
