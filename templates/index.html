@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Instagram Bulk Cookie Extractor</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background: #f4f7f6; }
+        .container { max-width: 850px; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin: auto; }
+        textarea { width: 100%; height: 160px; padding: 10px; margin-top: 10px; border: 1px solid #ccc; border-radius: 4px; font-family: monospace; }
+        button { background: #0095f6; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 4px; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #1877f2; }
+        pre { background: #000; color: #0f0; padding: 15px; border-radius: 4px; overflow-x: auto; margin-top: 20px; min-height: 100px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Instagram Bulk Cookie Extractor</h2>
+    <p>Format: <code>Username|Password|2FA_Secret_Key</code> (প্রতি লাইনে একটি করে)</p>
+    
+    <textarea id="accountInput" placeholder="user1|pass1|JBSWY3DPEHPK3PXP&#10;user2|pass2|"></textarea>
+    <br>
+    <button id="startBtn" onclick="startExtraction()">Start Extracting</button>
+    
+    <h3>Output Results:</h3>
+    <pre id="outputResult">Waiting for input...</pre>
+</div>
+
+<script>
+async function startExtraction() {
+    const data = document.getElementById('accountInput').value;
+    const btn = document.getElementById('startBtn');
+    const output = document.getElementById('outputResult');
+    
+    if(!data.trim()) {
+        alert("Please enter account details!");
+        return;
+    }
+    
+    btn.innerText = "Processing... Please wait...";
+    btn.disabled = true;
+    output.innerText = "Automation is running in the background. Please wait...";
+    
+    try {
+        const response = await fetch('/extract', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ data })
+        });
+        
+        const result = await response.json();
+        output.innerText = result.results.join('\n');
+    } catch (err) {
+        output.innerText = "Error: " + err.message;
+    } finally {
+        btn.innerText = "Start Extracting";
+        btn.disabled = false;
+    }
+}
+</script>
+
+</body>
+</html>
