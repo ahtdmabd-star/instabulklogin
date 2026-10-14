@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import pyotp
 from flask import Flask, render_template, request, jsonify
@@ -34,7 +35,7 @@ def extract():
         })
         
         try:
-            # প্রথমত ক্রাফট টোকেন পাওয়ার জন্য ইনস্টাগ্রাম হোম পেজে রিকোয়েস্ট পাঠানো
+            # ইনস্টাগ্রাম হোম পেজে রিকোয়েস্ট পাঠানো
             resp = session.get('https://www.instagram.com/accounts/login/')
             csrftoken = session.cookies.get('csrftoken', '')
             
@@ -43,20 +44,21 @@ def extract():
                 'X-Requested-With': 'XMLHttpRequest'
             })
             
-            # লগইন রিকোয়েস্ট পেোড
+            current_time = int(time.time())
             login_data = {
                 'username': username,
-                'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{int(os.time?.now() if hasattr(os, "time") else 0)}:{password}',
+                'enc_password': f'#PWD_INSTAGRAM_BROWSER:0:{current_time}:{password}',
                 'queryParams': '{}',
                 'optIntoOneTap': 'false'
             }
             
-            # যদি 2FA বা সিকিউরিটি চেক থাকে
+            # 2FA বা সিকিউরিটি চেক হ্যান্ডেল করার জন্য
             if totp_key:
                 totp = pyotp.TOTP(totp_key.replace(" ", ""))
-                # ওটিপি জেনারেট করে হ্যান্ডেল করা যেতে পারে
+                otp_code = totp.now()
+                # ওটিপি ভেরিফিকেশন লজিক এখানে যুক্ত করা যেতে পারে
             
-            # সরাসরি সেশন কুকি চেক করা
+            # সেশন কুকি চেক করা
             session_id = session.cookies.get('sessionid', '')
             
             if session_id:
